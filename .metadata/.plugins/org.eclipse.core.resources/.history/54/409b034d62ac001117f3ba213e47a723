@@ -1,0 +1,205 @@
+/*
+ * COMMENT
+ * Name:Guowei Liang
+ * UPI:glia769
+ * ID: 5815305
+ */
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class A3JPanel extends JPanel implements KeyListener, ActionListener,
+		MouseListener {
+	public static final Color BACKGROUND_COLOUR = Color.GREEN;
+	public static final Color LAUNCH_PAD_COLOUR = new Color(220, 66, 255);
+	public static final Rectangle ABOVE_GAME_AREA = A3Constants.ABOVE_GAME_AREA;
+	public static final Rectangle BELOW_GAME_AREA = A3Constants.BELOW_GAME_AREA;
+	public static final Rectangle LEFT_OF_GAME_AREA = A3Constants.LEFT_OF_GAME_AREA;
+	public static final Rectangle RIGHT_OF_GAME_AREA = A3Constants.RIGHT_OF_GAME_AREA;
+
+	public static final Rectangle GAME_AREA = A3Constants.GAME_AREA;
+	public static final Rectangle LAUNCH_PAD_AREA = A3Constants.LAUNCH_PAD_AREA;
+	public static final Point CENTRE_POINT = A3Constants.CENTRE_POINT;
+	public static final Point INFORMATION_POSITION1 = A3Constants.INFORMATION_POSITION1;
+
+	public static final int[] MONEY_AMOUNTS = A3Constants.MONEY_AMOUNTS;
+
+	public static final int UP = A3Constants.UP;
+	public static final int DOWN = A3Constants.DOWN;
+	public static final int LEFT = A3Constants.LEFT;
+	public static final int RIGHT = A3Constants.RIGHT;
+
+	private boolean gameHasEnded;
+	private Hero hero;
+	private boolean switchScreen = true;
+	private BlockOfCells blockOfCells = new BlockOfCells();
+	private BandOfVillains bandOfVillains = new BandOfVillains();
+	private Timer t;
+	private static int moneyAmount;
+	private Villain[] vil;
+
+	public A3JPanel() {
+		gameHasEnded = false;
+		setBackground(BACKGROUND_COLOUR);
+		blockOfCells = new BlockOfCells();
+		hero = new Hero();
+		addKeyListener(this);
+		addMouseListener(this);
+		t = new Timer(100, this);
+		reset();
+
+	}
+
+	// -------------------------------------------------------
+	// Initialise everything, ready for a new game.
+	// -------------------------------------------------------
+	private void reset() {
+		moneyAmount = 0;
+		gameHasEnded = false;
+		hero = new Hero();
+		blockOfCells = new BlockOfCells();
+		bandOfVillains = new BandOfVillains();
+		switchScreen = true;
+		//t.start();
+		repaint();
+	}
+
+	// -------------------------------------------------------
+	// Handle KeyEvents
+	// -------------------------------------------------------
+	public void keyPressed(KeyEvent e) {
+		System.out.println("key pressed");
+		if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+			hero.setCurrentDirection(Hero.LEFT);
+		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+			hero.setCurrentDirection(Hero.RIGHT);
+		} else if (e.getKeyCode() == KeyEvent.VK_UP) {
+			hero.setCurrentDirection(Hero.UP);
+		} else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+			hero.setCurrentDirection(Hero.DOWN);
+		} else if (e.getKeyChar() == 'h' && switchScreen == false) {
+			t.start();
+		} else if ( e.getKeyChar() == 's') {
+			switchScreen = false;
+			gameHasEnded = false;
+			repaint();
+		}
+
+		if (e.getKeyChar() == 'r') {
+			this.reset();
+		}
+	}
+
+	// -------------------------------------------------------
+	// Handle ActionEvents
+	// -------------------------------------------------------
+	public void actionPerformed(ActionEvent e) {
+		hero.move();
+		bandOfVillains.moveVillains();
+		if (Math.random() <= 0.8) {
+			bandOfVillains.addAVillain();
+		}
+
+		moneyAmount = moneyAmount
+				+ blockOfCells
+						.check007PositionAndGetMoney(new Point(
+								(int) (hero.getArea().getX() + 0.5 * A3Constants.CELL_SIZE),
+								(int) (hero.getArea().getY() + 0.5 * A3Constants.CELL_SIZE)));
+		repaint();
+
+		if (bandOfVillains.enemyHitsHero(hero) || moneyAmount == 45) {
+			t.stop();
+			gameHasEnded = true;
+
+		}
+		repaint();
+	}
+
+	// -------------------------------------------------------
+	// Handle MouseEvents
+	// -------------------------------------------------------
+	public void mousePressed(MouseEvent e) {
+		if (!gameHasEnded)
+			t.start();
+		System.out.println("mousePressed");
+		repaint();
+	}
+
+	// -------------------------------------------------------
+	// Draw everything
+	// -------------------------------------------------------
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		if (switchScreen) {
+			if (gameHasEnded) {
+				// game ends
+				if (moneyAmount < 45) {
+					g.setColor(Color.BLACK);
+					g.setFont(A3Constants.MEDIUM_FONT);
+					g.drawString("GOOD LUCK NEXT TIME", 120, 340);
+				}
+				if (moneyAmount == 45) {
+					g.setColor(Color.YELLOW);
+					g.setFont(A3Constants.MEDIUM_FONT);
+					g.drawString("Game is over! you won! high five!", 50, 200);
+					t.stop();
+				}
+
+			} else {
+				// not ends
+				drawTitleScreen(g);
+			}
+		} else {
+			System.out.println("draw game screen");
+			drawTitleScreen(g);
+			drawCellBlock(g);
+			hero.draw(g);
+			bandOfVillains.drawVillains(g);
+			
+		}
+	}
+
+	private void drawCellBlock(Graphics g) {
+		blockOfCells.drawCells(g);
+	}
+
+	private void drawTitleScreen(Graphics g) {
+		g.setColor(Color.GREEN);
+		g.fillRect(10, 10, 700, 720);
+		g.setFont(A3Constants.HUGE_FONT);
+		g.setColor(Color.BLUE);
+		g.drawString("Grab It Quick", 50, 50);
+		g.setFont(A3Constants.MEDIUM_FONT);
+		g.drawString("by glia769", 50, 75);
+		g.drawString("Completed All Stages", 50, 120);
+		g.drawString("Press s to see game screen", 50, 250);
+		g.drawString("Click mouse to start the game", 50, 260);
+		g.drawString("Press r to restart the game", 50, 300);
+		g.drawString("Use arrow keys to change the direction of hero", 50, 280);
+		//System.out.println("hihihi");
+	}
+
+	private void drawGameInformaton(Graphics g) {
+		g.drawString("You have collected $" + moneyAmount,
+				INFORMATION_POSITION1.x, INFORMATION_POSITION1.y);
+	}
+
+	public void keyReleased(KeyEvent e) {
+	}
+
+	public void keyTyped(KeyEvent e) {
+	}
+
+	public void mouseReleased(MouseEvent e) {
+	}
+
+	public void mouseClicked(MouseEvent e) {
+	}
+
+	public void mouseEntered(MouseEvent e) {
+	}
+
+	public void mouseExited(MouseEvent e) {
+	}
+}
